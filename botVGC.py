@@ -30,6 +30,15 @@ DEBUG_DECISIONS = True  # pon False para silenciar el log
 
 SPREAD_DAMAGE_MOD = 0.75  # en dobles, los spreads hacen 0.75× daño
 
+import os, threading, http.server, socketserver
+def _serve_http():
+    port = int(os.getenv("PORT", "8000"))
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200); self.end_headers()
+            self.wfile.write(b"ok")
+    with socketserver.TCPServer(("", port), Handler) as httpd:
+        httpd.serve_forever()
 
 def dbg(*a):
     if DEBUG_DECISIONS:
@@ -464,4 +473,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    threading.Thread(target=_serve_http, daemon=True).start()
+    asyncio.run(run_forever())
