@@ -471,6 +471,23 @@ async def main():
     finally:
         print("[INFO] Bot detenido.")
 
+async def run_forever():
+    backoff = 5
+    while True:
+        try:
+            # ejecuta tu ciclo normal
+            await main()
+            backoff = 5  # si salió limpio, resetea el backoff
+        except (asyncio.CancelledError, KeyboardInterrupt):
+            print("[INFO] Cancelado por el usuario. Cerrando bucle…")
+            break
+        except Exception as e:
+            print(f"[WARN] Bucle caído: {e}. Reintentando en {backoff}s…")
+            await asyncio.sleep(backoff)
+            backoff = min(backoff * 2, 60)
+        finally:
+            print("[INFO] Reiniciando conexión…")
+
 
 if __name__ == "__main__":
     threading.Thread(target=_serve_http, daemon=True).start()
