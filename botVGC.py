@@ -11,6 +11,7 @@ Bot de Pokémon Showdown para DOBLES aleatorias (Random Doubles estilo VGC)
 
 from __future__ import annotations
 import asyncio
+import os
 from typing import Dict, List, Optional, Tuple
 
 from poke_env import AccountConfiguration, ServerConfiguration, ShowdownServerConfiguration
@@ -34,7 +35,7 @@ DEBUG_DECISIONS = True  # pon False para silenciar el log
 
 SPREAD_DAMAGE_MOD = 0.75  # en dobles, los spreads hacen 0.75× daño
 
-import os, threading, http.server, socketserver
+import threading, http.server, socketserver
 def _serve_http():
     port = int(os.getenv("PORT", "8000"))
     class Handler(http.server.SimpleHTTPRequestHandler):
