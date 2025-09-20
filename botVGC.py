@@ -28,8 +28,8 @@ USER = "PaXBotVGC"
 PASS = "123456"
 FORMAT = "gen9randomdoublesbattle"
 # Side-server (opcional): si defines PS_WS_URL usaré ese websocket; si no, PS oficial
-PS_WS_URL = "wss://dawn.psim.us/showdown/websocket"
-PS_LOGIN_URL = "https://play.pokemonshowdown.com/~~showdown/action.php?"
+PS_WS_URL = "wss://dragonheaven.psim.us/showdown/websocket"
+PS_LOGIN_URL = "https://play.pokemonshowdown.com/action.php?"
 
 VERBOSE = True
 DEBUG_DECISIONS = os.getenv("DEBUG_DECISIONS", "false").lower() == "true"
