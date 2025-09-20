@@ -14,7 +14,7 @@ import asyncio
 import os
 from typing import Dict, List, Optional, Tuple
 
-from poke_env import AccountConfiguration, ServerConfiguration, ShowdownServerConfiguration
+from poke_env import AccountConfiguration, ShowdownServerConfiguration, ServerConfiguration
 from poke_env.player import Player
 from poke_env.data import GenData
 from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
@@ -23,27 +23,21 @@ from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
 # CONFIGURACIÓN
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-PS_USER = os.getenv("PS_USER", "PaXBotVGC3")
-PS_PASS = os.getenv("PS_PASS", "123456")
-FORMAT  = os.getenv("PS_FORMAT", "gen9randomdoublesbattle")
-
-# <- SIDE SERVER: cambia solo esta parte
-WS_URL    = os.getenv("PS_WS_URL", "wss://dawn.psim.us/showdown/websocket")  # el que elijas
-LOGIN_URL = os.getenv("PS_LOGIN_URL", "https://play.pokemonshowdown.com/~~showdown/action.php?")
+import os
+USER = os.getenv("PS_USER", "PaXBotVGC")
+PASS = os.getenv("PS_PASS", "123456")
+FORMAT = os.getenv("PS_FORMAT", "gen9randomdoublesbattle")
+# Side-server (opcional): si defines PS_WS_URL usaré ese websocket; si no, PS oficial
+PS_WS_URL = os.getenv("PS_WS_URL", "")  # p.ej. wss://dawn.psim.us/showdown/websocket
+PS_LOGIN_URL = os.getenv(
+    "PS_LOGIN_URL",
+    "https://play.pokemonshowdown.com/~~showdown/action.php?",
+)
 VERBOSE = True
-DEBUG_DECISIONS = True  # pon False para silenciar el log
+DEBUG_DECISIONS = os.getenv("DEBUG_DECISIONS", "false").lower() == "true"
 
 SPREAD_DAMAGE_MOD = 0.75  # en dobles, los spreads hacen 0.75× daño
 
-import threading, http.server, socketserver
-def _serve_http():
-    port = int(os.getenv("PORT", "8000"))
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200); self.end_headers()
-            self.wfile.write(b"ok")
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        httpd.serve_forever()
 
 def dbg(*a):
     if DEBUG_DECISIONS:
@@ -440,51 +434,59 @@ class VGCHeuristicsRandom(Player):
             pass
 
 
-async def main():
-    server_cfg = ServerConfiguration(WS_URL, LOGIN_URL)
-    account_cfg = AccountConfiguration(PS_USER, PS_PASS)
+def _normalize_ws(url: str) -> str:
+    if not url:
+        return url
+    if url.startswith("https://"):
+        return "wss://" + url[len("https://"):]
+    if url.startswith("http://"):
+        return "ws://" + url[len("http://"):]
+    return url
 
-    bot = VGCHeuristicsRandom(
-        account_configuration=account_cfg,
-        server_configuration=server_cfg,   # <- usa tu config custom
-        battle_format=FORMAT,
-        save_replays="replays_vgc_random",
-        log_level=25,
-        accept_open_team_sheet=True,
-    )
-
-    print(f"[INFO] Conectando como {USER} en formato {FORMAT} (dobles aleatorio)...")
-    print("[INFO] Para desafiar al bot desde tu cuenta principal en PS! usa:")
-    print(f"[INFO]   /challenge {USER}, {FORMAT}")
-
-    async def _login_check():
-        await asyncio.sleep(3)
-        if bot.username and str(bot.username).startswith("!"):
-            msg = (
-                "[WARN] Showdown devolvió un nombre con '!' (guest forzado)."
-                "       Sugerencias: usa un USER diferente o registra la cuenta"
-                "       en PS y pon PASS correcto; si no está registrada, deja PASS=\"\"."
-            )
-            print(msg)
-
-    asyncio.create_task(_login_check())
-
-    try:
-        await bot.accept_challenges(None, 1_000_000)
-    except (asyncio.CancelledError, KeyboardInterrupt):
-        print("[INFO] Cancelado por el usuario. Cerrando...")
-    finally:
-        print("[INFO] Bot detenido.")
+def _build_server_cfg() -> ServerConfiguration:
+    # Si se define PS_WS_URL, usamos side-server; si no, Showdown oficial
+    if PS_WS_URL:
+        ws = _normalize_ws(PS_WS_URL.strip())
+        login = PS_LOGIN_URL.strip() if PS_LOGIN_URL else "https://play.pokemonshowdown.com/~~showdown/action.php?"
+        print(f"[INFO] Conectando a side-server: {ws}")
+        return ServerConfiguration(ws, login)
+    else:
+        print("[INFO] Conectando al servidor oficial de Pokémon Showdown…")
+        return ShowdownServerConfiguration
 
 async def run_forever():
+    account_cfg = AccountConfiguration(USER, PASS)
     backoff = 5
     while True:
+        server_cfg = _build_server_cfg()
+        bot = VGCHeuristicsRandom(
+            account_configuration=account_cfg,
+            server_configuration=server_cfg,
+            battle_format=FORMAT,
+            save_replays="replays_vgc_random",
+            log_level=25,
+            accept_open_team_sheet=True,
+        )
+        print(f"[INFO] Conectando como {USER} en formato {FORMAT}…")
+        print("[INFO] Para desafiar al bot desde tu cuenta principal en PS! usa:")
+        print(f"[INFO]   /challenge {USER}, {FORMAT}")
+
+        async def _login_check():
+            await asyncio.sleep(3)
+            if bot.username and (str(bot.username).startswith("!") or str(bot.username).startswith("‽")):
+                print(
+                    "[WARN] Usuario forzado (guest/lock). Si estás en nube pública, puede ser bloqueo por proxy.
+"
+                    "       Prueba otro side-server o IP residencial, o apela el lock."
+                )
+
+        asyncio.create_task(_login_check())
+
         try:
-            # ejecuta tu ciclo normal
-            await main()
-            backoff = 5  # si salió limpio, resetea el backoff
+            await bot.accept_challenges(None, 1_000_000)
+            backoff = 5
         except (asyncio.CancelledError, KeyboardInterrupt):
-            print("[INFO] Cancelado por el usuario. Cerrando bucle…")
+            print("[INFO] Cancelado por el usuario. Cerrando…")
             break
         except Exception as e:
             print(f"[WARN] Bucle caído: {e}. Reintentando en {backoff}s…")
@@ -495,5 +497,8 @@ async def run_forever():
 
 
 if __name__ == "__main__":
-    threading.Thread(target=_serve_http, daemon=True).start()
+    try:
+        threading.Thread(target=_serve_http, daemon=True).start()
+    except Exception:
+        pass
     asyncio.run(run_forever())
