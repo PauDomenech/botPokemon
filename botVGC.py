@@ -24,15 +24,13 @@ from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 import os
-USER = os.getenv("PS_USER", "PaXBotVGC")
-PASS = os.getenv("PS_PASS", "123456")
-FORMAT = os.getenv("PS_FORMAT", "gen9randomdoublesbattle")
+USER = "PaXBotVGC"
+PASS = "123456"
+FORMAT = "gen9randomdoublesbattle"
 # Side-server (opcional): si defines PS_WS_URL usaré ese websocket; si no, PS oficial
-PS_WS_URL = os.getenv("PS_WS_URL", "")  # p.ej. wss://dawn.psim.us/showdown/websocket
-PS_LOGIN_URL = os.getenv(
-    "PS_LOGIN_URL",
-    "https://play.pokemonshowdown.com/~~showdown/action.php?",
-)
+PS_WS_URL = wss://dawn.psim.us/showdown/websocket
+PS_LOGIN_URL = https://play.pokemonshowdown.com/~~showdown/action.php?
+
 VERBOSE = True
 DEBUG_DECISIONS = os.getenv("DEBUG_DECISIONS", "false").lower() == "true"
 
@@ -475,8 +473,7 @@ async def run_forever():
             await asyncio.sleep(3)
             if bot.username and (str(bot.username).startswith("!") or str(bot.username).startswith("‽")):
                 print(
-                    "[WARN] Usuario forzado (guest/lock). Si estás en nube pública, puede ser bloqueo por proxy.
-"
+                    "[WARN] Usuario forzado (guest/lock). Si estás en nube pública, puede ser bloqueo por proxy.\n"
                     "       Prueba otro side-server o IP residencial, o apela el lock."
                 )
 
