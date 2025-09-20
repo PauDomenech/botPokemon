@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 from typing import Dict, List, Optional, Tuple
 
-from poke_env import AccountConfiguration, ShowdownServerConfiguration
+from poke_env import AccountConfiguration, ServerConfiguration, ShowdownServerConfiguration
 from poke_env.player import Player
 from poke_env.data import GenData
 from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
@@ -22,9 +22,13 @@ from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
 # CONFIGURACIÓN
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-USER = "PaXBotVGC2"   # <- cambia a tu alt si PS te devuelve "!usuario"
-PASS = "123456"            # si la cuenta NO está registrada, deja "" (vacío)
-FORMAT = "gen9randomdoublesbattle"  # dobles aleatorio (existe en PS)
+PS_USER = os.getenv("PS_USER", "PaXBotVGC3")
+PS_PASS = os.getenv("PS_PASS", "123456")
+FORMAT  = os.getenv("PS_FORMAT", "gen9randomdoublesbattle")
+
+# <- SIDE SERVER: cambia solo esta parte
+WS_URL    = os.getenv("PS_WS_URL", "wss://dawn.psim.us/showdown/websocket")  # el que elijas
+LOGIN_URL = os.getenv("PS_LOGIN_URL", "https://play.pokemonshowdown.com/~~showdown/action.php?")
 VERBOSE = True
 DEBUG_DECISIONS = True  # pon False para silenciar el log
 
@@ -436,12 +440,12 @@ class VGCHeuristicsRandom(Player):
 
 
 async def main():
-    account_cfg = AccountConfiguration(USER, PASS)
-    server_cfg = ShowdownServerConfiguration  # PS oficial
+    server_cfg = ServerConfiguration(WS_URL, LOGIN_URL)
+    account_cfg = AccountConfiguration(PS_USER, PS_PASS)
 
     bot = VGCHeuristicsRandom(
         account_configuration=account_cfg,
-        server_configuration=server_cfg,
+        server_configuration=server_cfg,   # <- usa tu config custom
         battle_format=FORMAT,
         save_replays="replays_vgc_random",
         log_level=25,
