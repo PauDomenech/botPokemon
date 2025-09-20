@@ -22,7 +22,7 @@ from poke_env.player.battle_order import DoubleBattleOrder, BattleOrder
 # CONFIGURACIÓN
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-USER = "PaXBotVGC"   # <- cambia a tu alt si PS te devuelve "!usuario"
+USER = "PaXBotVGC2"   # <- cambia a tu alt si PS te devuelve "!usuario"
 PASS = "123456"            # si la cuenta NO está registrada, deja "" (vacío)
 FORMAT = "gen9randomdoublesbattle"  # dobles aleatorio (existe en PS)
 VERBOSE = True
